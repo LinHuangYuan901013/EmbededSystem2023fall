@@ -14,13 +14,12 @@ devices = scanner.scan(10.0)
 n=0
 addr = []
 for dev in devices:
-    if (dev.rssi>-80):
-        continue
-    print ("%d: Device %s (%s), RSSI=%d dB" % (n, dev.addr,dev.addrType, dev.rssi))
+    # print ("%d: Device %s (%s), RSSI=%d dB" % (n, dev.addr,dev.addrType, dev.rssi))
     addr.append(dev.addr)
     n += 1
     for (adtype, desc, value) in dev.getScanData():
         print (" %s = %s" % (desc, value))
+        print ("%d: Device %s (%s), RSSI=%d dB" % (n, dev.addr,dev.addrType, dev.rssi))
 number = input('Enter your device number: ')
 print ('Device', number)
 num = int(number)
