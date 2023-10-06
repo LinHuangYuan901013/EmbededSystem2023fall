@@ -18,8 +18,10 @@ for dev in devices:
     addr.append(dev.addr)
     n += 1
     for (adtype, desc, value) in dev.getScanData():
-        print (" %s = %s" % (desc, value))
-        print ("%d: Device %s (%s), RSSI=%d dB" % (n, dev.addr,dev.addrType, dev.rssi))
+        # print (" %s = %s" % (desc, value))
+        if desc=="Complete Local Name":
+            print(value)
+            print ("%d: Device %s (%s), RSSI=%d dB" % (n, dev.addr,dev.addrType, dev.rssi))
 number = input('Enter your device number: ')
 print ('Device', number)
 num = int(number)
