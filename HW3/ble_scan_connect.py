@@ -14,6 +14,8 @@ devices = scanner.scan(10.0)
 n=0
 addr = []
 for dev in devices:
+    if (dev.rssi>-80):
+        continue
     print ("%d: Device %s (%s), RSSI=%d dB" % (n, dev.addr,dev.addrType, dev.rssi))
     addr.append(dev.addr)
     n += 1
