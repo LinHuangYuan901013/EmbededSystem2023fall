@@ -69,17 +69,20 @@ notify_char = characteristics[0]
 hEcg=notify_char.getHandle()
 for descriptor in p_device.getDescriptors(hEcg,c_service.hndEnd):
     if (descriptor.uuid==0x2902):
+        # 0: This specifies that leading zeros should be used if the resulting string has fewer than two characters.
+        # 2X: This specifies that the integer should be formatted as a hexadecimal string with two characters, using uppercase letters for the hexadecimal digits.
         print(f'Client Characteristic Configuration found at handle 0x{format(descriptor.handle,"02X")}')
         hEcgCCC=descriptor.handle
 
-p_device.writeCharacteristic(hEcgCCC,bytes([1, 0]))
+p_device.writeCharacteristic(hEcgCCC,bytes([1, 0])) # bytes([1, 0]) = b'\x01\x00'
 
 
 # %%
 try: 
     while True:
         if p_device.waitForNotifications(1.0):
-            # handleNotification() was called
+            # handleNotification() was auto-called
+            # http://ianharvey.github.io/bluepy-doc/notifications.html
             continue
 
         print("Waiting... Waited more than one sec for notification")
