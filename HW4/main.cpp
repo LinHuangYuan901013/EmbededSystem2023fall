@@ -16,22 +16,24 @@
 
 #include <events/mbed_events.h>
 #include "ble/BLE.h"
-#include "ble/gap/Gap.h"
 #include "ble/services/HeartRateService.h"
-#include "pretty_printer.h"
+#include "ble/Gap.h"
 #include "mbed-trace/mbed_trace.h"
-// Sensors drivers present in the BSP library
 #include "stm32l475e_iot01_tsensor.h"
 #include "stm32l475e_iot01_hsensor.h"
 #include "stm32l475e_iot01_psensor.h"
 #include "stm32l475e_iot01_magneto.h"
 #include "stm32l475e_iot01_gyro.h"
 #include "stm32l475e_iot01_accelero.h"
-char acc_json[256];
+#include "HeartrateService.h"
+
 using namespace std::literals::chrono_literals;
 
-const static char DEVICE_NAME[] = "Heartrate";
-
+const static char DEVICE_NAME[] = "HeartrateService";
+float SCALE_MULTIPLIER=1;
+int buffer[3] = {0};
+int16_t dataXYZ[3] = {0};
+char acc_json[256];
 static events::EventQueue event_queue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 
 class HeartrateDemo : ble::Gap::EventHandler {
@@ -39,9 +41,8 @@ public:
     HeartrateDemo(BLE &ble, events::EventQueue &event_queue) :
         _ble(ble),
         _event_queue(event_queue),
-        _heartrate_uuid(GattService::UUID_HEART_RATE_SERVICE),
-        _heartrate_value(100),
-        _heartrate_service(ble, _heartrate_value, HeartRateService::LOCATION_FINGER,pdata),
+        _heartrate_uuid(0x180D),
+        _heartrate_service(ble, buffer),
         _adv_data_builder(_adv_buffer)
     {
     }
@@ -57,13 +58,13 @@ private:
     /** Callback triggered when the ble initialization process has finished */
     void on_init_complete(BLE::InitializationCompleteCallbackContext *params)
     {
+        
         BSP_MAGNETO_Init();
+
         if (params->error != BLE_ERROR_NONE) {
             printf("Ble initialization failed.");
             return;
         }
-
-        print_mac_address();
 
         /* this allows us to receive events like onConnectionComplete() */
         _ble.gap().setEventHandler(this);
@@ -130,19 +131,12 @@ private:
     void update_sensor_value()
     {
         /* you can read in the real value but here we just simulate a value */
-        // int16_t rDataXYZ[3]={0};
-
-        BSP_MAGNETO_GetXYZ(pdata);
-        // pdata[0]=rDataXYZ[0];
-        // pdata[1]=rDataXYZ[1];
-        // pdata[2]=rDataXYZ[2];
-// printf("\nACCELERO_X = %d\n", rDataXYZ[0]);
-// printf("\nACCELERO_Y = %d\n", rDataXYZ[1]);
-// printf("\nACCELERO_Z = %d\n", rDataXYZ[2]);
-// printf("\nACCELERO_Xp = %d\n", pdata[0]);
-// printf("\nACCELERO_Yp = %d\n", pdata[1]);
-// printf("\nACCELERO_Zp = %d\n", pdata[2]);
-        _heartrate_service.updateHeartRate(_heartrate_value,pdata);
+        BSP_MAGNETO_GetXYZ(dataXYZ);
+        /*  60 <= bpm value < 110 */
+        buffer[0]=int(dataXYZ[0]);
+        buffer[1]=int(dataXYZ[1]);
+        buffer[2]=int(dataXYZ[2]);
+        _heartrate_service.updateHeartRate(buffer);
     }
 
     /* these implement ble::Gap::EventHandler */
@@ -171,12 +165,8 @@ private:
 private:
     BLE &_ble;
     events::EventQueue &_event_queue;
-
     UUID _heartrate_uuid;
-    uint16_t _heartrate_value;
-    int16_t pdata[3]={5,6,8};
-    HeartRateService _heartrate_service;
-
+    HeartrateService _heartrate_service;
     uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
     ble::AdvertisingDataBuilder _adv_data_builder;
 };
@@ -184,7 +174,7 @@ private:
 /* Schedule processing of events from the BLE middleware in the event queue. */
 void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
 {
-    event_queue.call(Callback<void()>(&context->ble, &BLE::processEvents));
+    event_queue.call(mbed::Callback<void()>(&context->ble, &BLE::processEvents));
 }
 
 int main()
@@ -193,7 +183,6 @@ int main()
 
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(schedule_ble_events);
-
     HeartrateDemo demo(ble, event_queue);
     demo.start();
 
