@@ -7,7 +7,7 @@ import json
 import time
 import random
 import matplotlib.pyplot as plot
-HOST = '192.168.0.13' # IP address lab305 or ipconfig
+HOST = '10.118.168.25' # IP address lab305 or ipconfig
 PORT = 6531 # Port to listen on (use ports > 1023)
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
